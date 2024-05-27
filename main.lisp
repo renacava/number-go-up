@@ -12,7 +12,7 @@
        (wm-title *tk* "Number Go Up")
        (let* ((content (make-instance 'frame))
               (fight-button (make-instance 'button :master content :text "Fight monster" :command #'fight-monster))
-              (log (make-instance 'text :height 24 :width 80 :wrap :word :state :disabled :master content))
+              (log (make-instance 'scrolled-text :height 24 :width 80 :wrap :word :state :disabled :master content ))
               (repl (make-instance 'entry :master content :width 60)))
          (bind *tk* "<Return>" (lambda (event) (setf (text repl) (evaluate-string-in-package (text repl) :number-go-up))))
          (setf *textbox* log)
@@ -71,6 +71,7 @@
   (configure *textbox* :state :normal)
   (append-text *textbox* text)
   (append-newline *textbox*)
+  (nodgui:see *textbox* "end")
   (configure *textbox* :state :disabled))
 
 
