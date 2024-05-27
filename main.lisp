@@ -5,6 +5,26 @@
 (defparameter *monster-hit-number* 4)
 (defparameter *textbox* nil)
 
+(defun main ()
+  (sb-thread:make-thread
+   (lambda ()
+     (with-nodgui ()
+       (wm-title *tk* "Number Go Up")
+       (let* ((content (make-instance 'frame))
+              (fight-button (make-instance 'button :master content :text "Fight monster" :command #'fight-monster))
+              (log (make-instance 'text :height 24 :width 80 :wrap :word :state :disabled :master content))
+              (repl (make-instance 'entry :master content :width 60)))
+         (bind *tk* "<Return>" (lambda (event) (setf (text repl) (evaluate-string-in-package (text repl) :number-go-up))))
+         (setf *textbox* log)
+         (configure content :padding "3 3 12 12")
+         (grid content 0 0 :sticky "nsew")
+         (grid-columnconfigure *tk* 0 :weight 1)
+         (grid-rowconfigure *tk* 0 :weight 1)
+         (grid log 0 0 :sticky "nsew")
+         (grid fight-button 1 0 :sticky "we")
+         (grid repl 2 0 :sticky "we")
+         (adventure))))))
+
 (defun adventure ()
   (reset)
   (log-text "You are on an adventure. You have 5 health, 0 hit number and the current monster has target-number 4. Roll higher than the monster's target-number to slay it and move on to the next monster."))
@@ -32,8 +52,7 @@
 
 (defun take-damage ()
   (log-text (format nil "You fail to slay the monster and take 1 damage. You now have ~a health." (decf *health-number*)))
-  (unless (> *health-number* 0)
-    (lose)))
+  (unless (> *health-number* 0) (lose)))
 
 (defun win ()
   (log-text "You win.")
@@ -54,51 +73,6 @@
   (append-newline *textbox*)
   (configure *textbox* :state :disabled))
 
-(defmacro with-nodgui-thread (&body body)
-  `(sb-thread:make-thread
-    (lambda ()
-      (with-nodgui ()
-        (wm-title *tk* "Number Go Up")
-        ,@body))))
 
-(defun get-current-time-seconds ()
-  (float (/ (get-internal-real-time) internal-time-units-per-second)))
-
-(defun get-thread-by-name (thread-name)
-  (loop for thread in (sb-thread:list-all-threads)
-        when (string= thread-name (sb-thread:thread-name thread))
-        do (return-from get-thread-by-name thread)))
-
-(defun destroy-thread-by-name (thread-name)
-  (let ((thread (get-thread-by-name thread-name)))
-    (when thread
-      (sb-thread:terminate-thread thread))))
-
-(defun make-quit-button ()
-  (let ((button (make-instance 'button :text "QUIT" :command (lambda () (exit-nodgui)))))
-    (grid button 0 2)
-    button))
-
-(defun main ()
-  (with-nodgui-thread ()
-    (let* ((content (make-instance 'frame))
-           (fight-button (make-instance 'button :master content :text "Fight monster" :command #'fight-monster))
-           (log (make-instance 'text :height 24 :width 80 :wrap :word :state :disabled :master content))
-           (repl (make-instance 'entry :master content :width 60)))
-      (bind *tk* "<Return>" (lambda (event) (let ((result (format nil "~a"
-                                                                  (ignore-errors
-                                                                   (eval
-                                                                    (read-from-string (format nil "(progn (in-package :number-go-up) ~a)" (text repl)))
-                                                                    )))))
-                                              (setf (text repl) result))))
-      (setf *textbox* log)
-      (configure content :padding "3 3 12 12")
-      (grid content 0 0 :sticky "nsew")
-      (grid-columnconfigure *tk* 0 :weight 1)
-      (grid-rowconfigure *tk* 0 :weight 1)
-      (grid log 0 0 :sticky "nsew")
-      (grid fight-button 1 0 :sticky "we")
-      (grid repl 2 0 :sticky "we")
-
-      (adventure)
-      )))
+(defun evaluate-string-in-package (string package)
+  (format nil "~a" (ignore-errors (eval (read-from-string (format nil "(progn (in-package ~a) ~a)" package string))))))
