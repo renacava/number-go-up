@@ -1299,17 +1299,17 @@ It works because Common Lisp passes everything by value, not by reference, excep
                                (cons (car inner-tree) acc)))))))
     (rec tree nil)))
 
-(defun before (x y sequence &key (test #'eql))
+(defun before-sequence (x y sequence &key (test #'eql))
   "Returns the cdr of the given sequence if x occurs in it before y, else nil. Remember, you can test the return of this func for T, the cdr is just potentially useful extra info."
   (and sequence
        (let ((first (car sequence)))
          (cond ((funcall test y first) nil)
                ((funcall test x first) sequence)
-               (t (before x y (cdr sequence) :test test))))))
+               (t (before-sequence x y (cdr sequence) :test test))))))
 
-(defun after (x y sequence &key (test #'eql))
+(defun after-sequence (x y sequence &key (test #'eql))
   "Returns the cdr of the given sequence from x, if x occurs after y, and both x and y occur in the given sequence. Else nil."
-  (let ((rest (before y x sequence :test test)))
+  (let ((rest (before-sequence y x sequence :test test)))
     (and rest (member x rest :test test))))
 
 (defun duplicate-p (object sequence &key (test #'eql))
